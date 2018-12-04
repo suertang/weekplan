@@ -1,0 +1,348 @@
+<!DOCTYPE HTML>
+    <html>
+    <head>
+    <meta charset="utf-8">
+    <title>TB OVERVIEW</title>
+    <style>
+        html,body{margin:0px;width:100%}
+        #week{width:100%;
+        height:100%}
+        #days{height:30px;width:100%}
+        #plans{height:40px;width:100%;margin:2px 0}
+        #plans div,#days div{height:100%;float:left;box-sizing: border-box;border:1px solid cadetblue;}
+        #plans div{line-height:40px;}
+        #days div{line-height:30px;text-align:center}
+        .no{text-align:center;line-height:40px;
+        }
+        #overlay{
+            width:100%;
+            height:100%;
+            position: absolute;
+            display:none;
+            z-index:2;
+            background: #AAA;
+            opacity: 0.6;
+            left:0px;
+            top:0px;
+        }
+        .title{font-size:20px;text-align:center;}
+        .hide{width:0% !important;border:0px !important}
+        .planned{
+            background: linear-gradient(transparent 5%, rgba(6, 128, 204,0.4) 20%);
+            border-radius: 5px;
+            border:3px solid cadetblue;
+            position: relative;
+            
+        }
+        .planned:after{
+            content: " ";
+            
+            position: absolute;
+            right: 0px;
+            width: 4px;
+            height: 40px;
+            cursor: w-resize;
+            z-index: 12;
+        }
+        .slots{margin:0 auto;}
+        .slots div{
+            width:18%;
+            box-sizing: border-box;
+            height:200px;
+            border:1px dashed darkgrey;
+            background:wheat;
+            float:left;
+            padding:0px 3px;
+            margin:1%;
+        }
+        .ssel{border:1px solid seagreen !important;
+            background:#FFF !important;
+            }
+            #mod{position: fixed;
+                display:none;
+                width:600px;
+                left:30%;
+                top:10%;
+                background-color:#FFF;
+                font-family: Arial, Helvetica, sans-serif;
+                border:1px solid royalblue;
+                border-radius: 3px;
+                z-index:11;
+                margin:0 auto;
+            }
+            .label{width:200px;float:left;box-sizing: border-box;padding-left:30px;margin:5px 0px;}
+            .ins{width:400px;float:left;box-sizing: border-box;margin:5px 0px;}
+            .ins input{width:80%}
+        </style>
+    <script src="http://bzo.bosch.com/bzo/media/js/jquery.js"></script>
+
+    <script>
+
+    function log(str){
+        console.log(str,eval(str))
+    }
+
+
+    let m_pos;
+    var isResize=false;
+    function resize(e){
+        //const dx = m_pos - e.originalEvent.x;
+        m_pos = e.originalEvent.x;
+        trig=e.data.trig;
+        try{
+        colspan=parseInt(trig.attr('class').match(/colspan(\d)/)[1])
+        }catch(e){
+            colspan=1
+            return;
+        }
+        unitwidth=trig.width()/colspan
+        
+        //x=trig.position().left
+        
+        if(st.x-m_pos>unitwidth*0.6){
+            $(trig).off("mousemove");
+            
+            trig.attr('class',function(index,css){
+                console.log('shrinking... colspan=',colspan)
+                return css.replace(/colspan(\d){0,1}/g,'')
+            }).addClass(function(){
+                if(colspan==1){
+                    return ""
+                }
+                else{
+                    trig.parent().find('.hide:last').removeClass('hide');
+                    return 'colspan'+(colspan-1)                   
+                }
+            })            
+            
+            
+            //isResize=false;
+        }
+        /*
+        else if(m_pos-st.x>unitwidth*0.6){
+            trig.removeClass(function(index,css){
+                return css.match(/colspan(\d){0,1}/g||[]).join(' ')
+            }).addClass('colspan'+(colspan+1))            
+            $(document).off("mousemove");
+            trig.next().addClass('hide')
+        }
+        */
+        //trig.css('width', trig.width() + dx + "px !important");
+        //console.log(parseInt(trig.width()) + dx + "px !important")
+    }
+    
+    (function($){
+    $.fn.disableSelection = function() {
+        return this
+                 .attr('unselectable', 'on')
+                 .css('user-select', 'none')
+                 .on('selectstart', false);
+    };
+    })(jQuery); 
+        var st={}
+        var ed={}
+    var evtbind=function(){
+
+        
+        
+        $('#plans div:not(.no)')
+        .disableSelection()
+        .mousedown(function(e){
+            //console.log('X start',e.pageX)
+            //console.log('I am div number:',$('#plans div').index(this))
+            //console.log('my left=',$(this).offsetLeft)
+            st.i=$(this).index()
+            st.p=$(this).parent().index()
+            st.x=e.pageX
+            //console.log(st.x)
+
+
+            if(e.offsetX>$(this).width()-4){
+                m_pos = e.x;
+                isResize=true;
+                $(this).on("mousemove", {trig:$(this)},resize);
+            }
+        })
+        .mouseup(function(e){
+            //$(trig).off("mousemove");
+            var clr=function(){
+                st={};
+                ed={};
+            }
+            if(isResize){
+                isResize=false;
+                return 
+            }
+            //console.log('X end',e.pageX)
+            //console.log('I am div number:',$('#plans div').index(this))
+            ed.i=$(this).index()
+            ed.p=$(this).parent().index()
+            ed.x=e.pageX
+            
+            if(ed.p!=st.p){
+                
+                return clr();
+            }
+            if(Math.abs(ed.x-st.x)<3){
+                return clr();
+            }
+            
+            if($(this).hasClass('planned')){
+                return clr();
+            }
+            
+            
+            start_index=Math.min(st.i,ed.i)
+            end_index=Math.max(st.i,ed.i)
+
+            warp=end_index+1-start_index
+            $(this).parent().find('div:eq('+start_index+')').attr('class',function(index,css){
+                console.log('css=',css)
+                if(css){
+                    css.replace(/colspan\d/,'');
+                    
+                }
+                return 'colspan'+warp
+            }).addClass('planned').bind('dblclick',function(){
+                //$(this).toggleClass('sel')
+                el=$(this) //last mouseup element
+                createinput($(this)).show()
+                //.css({
+                ///    'left':($(window).width()-$(this).width())/2,
+                //    'top':($(window).height()-$(this).height())/2                    
+                //})
+            })
+            
+            for(var i=start_index+1;i<=end_index;i++){
+                $(this).parent().find('div:eq('+i+')').addClass('hide')
+            }
+            //$(this).off('mouseup')
+            return clr()
+            
+        })
+
+        function createinput(trig){
+            //if($('#mod').text()==""){
+            $('#mod').html("")
+                var labels=['Project_Name','Test_Type','BM_No','Priority','Tester']
+                el=$('<div><H2 style="text-align:center;padding:20px">Infomation input:</H2></div>')
+                for(var i in labels){ 
+                    if(labels[i]!=''){     
+                        label=$('<div></div>').text(labels[i]).addClass('label')
+                        inp=$('<div><div>').append($('<input>').attr('name',labels[i]).val(trig.attr(labels[i]))).addClass('ins')
+                        //console.log(trig.attr(labels[i]))
+                        el.append(label).append(inp)
+                    }
+                }
+                btn=$('<div id="btngrp" style="text-align:center;padding:40px 0px"><button id="save">Save</button><span style="width:30px"></span><button  id="cancel">Cancel</button></div>')
+                btn.find('#cancel').click(function(){$('#mod').hide();$('#overlay').hide()})
+                btn.append($('<button>Delete</button>').click(function(){
+                    //recover
+                    trig.attr('class',function(i,c){
+                        if(c.match(/colspan(\d)/)){
+                            colspan=parseInt(c.match(/colspan(\d)/)[1])
+                        }
+                        else{
+                            colspan=1
+                        }
+                        n=trig
+                        for(var i=0;i<colspan-1;i++){
+                            n=n.next()
+                            n.removeClass('hide')
+                        }
+                        return c.replace(/colspan\d/,'').replace('planned','')
+                        })
+                    .off('dblclick')
+                    labels.forEach(function(v,i){
+                        trig.removeAttr(v)
+                    })
+                    $('#mod').hide()
+                    $('#overlay').hide()
+                    }))
+                btn.find('#save').click(function(){
+                    for(var i in labels){
+                        trig.attr(labels[i],el.find('[name="'+labels[i]+'"]').val())
+                    }
+                    trig.text(el.find('[name="Project_Name"]').val())
+                    $('#mod').hide()
+                    $('#overlay').hide()
+                })
+                
+                $('#mod').append(el)
+                $('#mod').append(btn)
+                $('#overlay').show()
+            //}
+
+            return $('#mod')
+        }
+        
+    }
+    </script>
+    </head>
+    <div id='overlay'></div>
+    <body>
+    <div id='planner' style='width:1080px;margin:110px auto;'> </div>      
+        <script>
+            function daytostring(day){
+                curr=new Date()
+                return new Date(curr.setDate(day+1)).toDateString();
+            }
+            var conf={
+                'days':'5',
+                'TBs':'8'
+                }
+            $('head').append('<link rel="stylesheet" type="text/css" href="css/week'+conf.days+'.css">')
+            $(init());
+            function init(){
+                $('#planner').html('')
+                str=$("<div id='days'></div>")
+                weeks=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday']
+                str.append("<div class='no'>No.</div>")
+
+                var curr = new Date; // get current date
+                var first = curr.getDate() - curr.getDay(); // First day is the day of the month - the day of the week
+                //var last = first + 6; // last day is the first day + 6
+                for (var i=0;i<parseInt(conf.days);i++){
+                    str.append($("<div></div>").text(daytostring(first+i)))
+                }
+                plandiv=$("<div id='weeks'></div>")
+                for (var i=0;i<parseInt(conf.TBs);i++){
+                    tbdiv=$("<div id='plans'></div>").append($("<div class='no'></div>").text('TB'+(i+1)))
+                    for (var j=0;j<parseInt(conf.days);j++){
+                        tbdiv.append("<div></div>")
+                    }
+                    plandiv.append(tbdiv)
+                }
+                sel=$('<div style="text-align:right"><span>Week days</span></div>').append(
+                    $('<select ></select>').append('<option>5</option><option>6</option><option>7</option>').on('change',function(){                        
+                        //stylesheet=
+                        conf.days=$(this).find(':selected').text()
+                        //$('link').remove()
+                        $('head').append('<link rel="stylesheet" type="text/css" href="css/week'+conf.days+'.css">')
+                        init()
+                    }))
+                $('#planner').append('<div class="title"><h2>ESD test bench arrangement system</h2></div>')
+                $('#planner').append(sel)
+                $('#planner').append('<div id="mod"></div>')
+                $('#planner').append(str)
+                $('#planner').append(plandiv)
+                
+                $('#planner').append($("<div class='slots'></div>").append($('<div></div><div></div><div></div><div></div><div></div>')))
+                
+                $('select').find('option').each(function(i,e){
+                    if(e.text==conf.days){
+                        console.log(e.text,conf.days)
+                        e.selected=true;
+                    }
+                })
+                evtbind()
+            }
+
+
+
+        </script>
+            
+            </body>
+    
+    
+    </html>
