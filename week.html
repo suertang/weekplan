@@ -48,29 +48,46 @@
         .slots div{
             width:18%;
             box-sizing: border-box;
-            height:200px;
+            height:40px;
             border:1px dashed darkgrey;
             background:wheat;
             float:left;
             padding:0px 3px;
             margin:1%;
         }
+        #btngrp {text-align: center;}
+        #btngrp ul{display:inline-block}
+        #btngrp li{list-style: none;padding:0 10px;display:inline-block}
+        
+        .slots:before{
+            height:40px;
+            content:"Slots";
+            display:block;
+            clear: both;
+            line-height:40px;
+            margin:10 auto;
+            font-size:30px;
+            width:100%;
+            text-align:center;
+        }
         .ssel{border:1px solid seagreen !important;
             background:#FFF !important;
             }
-            #mod{position: fixed;
+            #mod{position: absolute;
                 display:none;
                 width:600px;
                 left:30%;
-                top:10%;
-                background-color:#FFF;
+                top:20%;
+                background-color:rgb(224,224,224);
                 font-family: Arial, Helvetica, sans-serif;
-                border:1px solid royalblue;
+                border:1px solid grey;
                 border-radius: 3px;
                 z-index:11;
                 margin:0 auto;
             }
-            .label{width:200px;float:left;box-sizing: border-box;padding-left:30px;margin:5px 0px;}
+            .frame{height:180px;}
+            .label{width:200px;float:left;box-sizing: border-box;padding-left:30px;margin:5px 0px;
+            height:20px;}
             .ins{width:400px;float:left;box-sizing: border-box;margin:5px 0px;}
             .ins input{width:80%}
         </style>
@@ -97,13 +114,12 @@
         }
         unitwidth=trig.width()/colspan
         
-        //x=trig.position().left
         
         if(st.x-m_pos>unitwidth*0.6){
             $(trig).off("mousemove");
             
             trig.attr('class',function(index,css){
-                console.log('shrinking... colspan=',colspan)
+                //console.log('shrinking... colspan=',colspan)
                 return css.replace(/colspan(\d){0,1}/g,'')
             }).addClass(function(){
                 if(colspan==1){
@@ -116,19 +132,9 @@
             })            
             
             
-            //isResize=false;
+          
         }
-        /*
-        else if(m_pos-st.x>unitwidth*0.6){
-            trig.removeClass(function(index,css){
-                return css.match(/colspan(\d){0,1}/g||[]).join(' ')
-            }).addClass('colspan'+(colspan+1))            
-            $(document).off("mousemove");
-            trig.next().addClass('hide')
-        }
-        */
-        //trig.css('width', trig.width() + dx + "px !important");
-        //console.log(parseInt(trig.width()) + dx + "px !important")
+        
     }
     
     (function($){
@@ -143,10 +149,42 @@
         var ed={}
     var evtbind=function(){
 
-        
-        
-        $('#plans div:not(.no)')
+
+
+        function jsongen(tr){
+            //retrun json string of input
+            js={}
+            var labels=['Project_Name','Test_Type','BM_No','Priority','Tester']
+            for(var i=0;i<labels.length;i++){
+                label=labels[i]
+                js[label]=tr.attr(label)
+            }
+            return JSON.stringify(js)
+        }
+
+        $('.slots div')
+        .on('drop',function(e){
+            
+            txt=e.originalEvent.dataTransfer.getData("json")
+            js=JSON.parse(txt)
+            //console.log('dropping',txt)
+            $(this).data('json',txt);
+            $(this).text(js["Project_Name"])
+            return false;
+        })
+        .on('dragstart',function(e){            
+            e.originalEvent.dataTransfer.setData("json",$(this).data('json'))
+        })
+        .on('dragover',false)
+        .attr('draggable','true')
+        .dblclick()
+
+
+        $('.no')
         .disableSelection()
+        $('#plans div:not(.no)')
+        //.disableSelection()
+
         .mousedown(function(e){
             //console.log('X start',e.pageX)
             //console.log('I am div number:',$('#plans div').index(this))
@@ -207,10 +245,31 @@
                 //$(this).toggleClass('sel')
                 el=$(this) //last mouseup element
                 createinput($(this)).show()
-                //.css({
-                ///    'left':($(window).width()-$(this).width())/2,
-                //    'top':($(window).height()-$(this).height())/2                    
-                //})
+                
+
+            })
+            .attr('draggable','true')
+            .on('dragstart',function(e){
+                //e.originalEvent.preventDefault()
+                
+                text=jsongen($(this))
+                e.originalEvent.dataTransfer.setData("json",text)
+                
+                //return false;
+            })
+            .on('drop',function(e){
+                
+                txt=e.originalEvent.dataTransfer.getData("json")
+                js=JSON.parse(txt)
+                for(var attr in js){
+                    $(this).attr(attr,js[attr])
+                }
+                $(this).text(js["Project_Name"]);
+                return false;
+            })
+            .on('dragover',function(e){
+                e.stopPropagation()
+                e.preventDefault()
             })
             
             for(var i=start_index+1;i<=end_index;i++){
@@ -225,18 +284,21 @@
             //if($('#mod').text()==""){
             $('#mod').html("")
                 var labels=['Project_Name','Test_Type','BM_No','Priority','Tester']
-                el=$('<div><H2 style="text-align:center;padding:20px">Infomation input:</H2></div>')
+                el=$('<div><H2 style="text-align:center;">Infomation </H2></div>')
+                frame=$("<div></div>").addClass('frame')
                 for(var i in labels){ 
                     if(labels[i]!=''){     
                         label=$('<div></div>').text(labels[i]).addClass('label')
                         inp=$('<div><div>').append($('<input>').attr('name',labels[i]).val(trig.attr(labels[i]))).addClass('ins')
                         //console.log(trig.attr(labels[i]))
-                        el.append(label).append(inp)
+                        frame.append(label).append(inp)
                     }
                 }
-                btn=$('<div id="btngrp" style="text-align:center;padding:40px 0px"><button id="save">Save</button><span style="width:30px"></span><button  id="cancel">Cancel</button></div>')
+                //console.log(frame)
+                
+                btn=$('<div id="btngrp"><ul><li><button id="save">Save</button></li><li><button  id="cancel">Cancel</button></li><li><button id="del">Delete</button></li></ul></div>')
                 btn.find('#cancel').click(function(){$('#mod').hide();$('#overlay').hide()})
-                btn.append($('<button>Delete</button>').click(function(){
+                btn.find('#del').click(function(){
                     //recover
                     trig.attr('class',function(i,c){
                         if(c.match(/colspan(\d)/)){
@@ -252,13 +314,15 @@
                         }
                         return c.replace(/colspan\d/,'').replace('planned','')
                         })
+                    .attr('draggable',false)
+                    .text('')
                     .off('dblclick')
                     labels.forEach(function(v,i){
                         trig.removeAttr(v)
                     })
                     $('#mod').hide()
                     $('#overlay').hide()
-                    }))
+                    })
                 btn.find('#save').click(function(){
                     for(var i in labels){
                         trig.attr(labels[i],el.find('[name="'+labels[i]+'"]').val())
@@ -268,7 +332,7 @@
                     $('#overlay').hide()
                 })
                 
-                $('#mod').append(el)
+                $('#mod').append(el).append(frame)
                 $('#mod').append(btn)
                 $('#overlay').show()
             //}
@@ -283,6 +347,12 @@
     <body>
     <div id='planner' style='width:1080px;margin:110px auto;'> </div>      
         <script>
+            Date.prototype.addDays = function(days) {
+                var date = new Date(this.valueOf());
+                date.setDate(date.getDate() + days);
+                return date;
+            }
+            
             function daytostring(day){
                 curr=new Date()
                 return new Date(curr.setDate(day+1)).toDateString();
@@ -313,6 +383,31 @@
                     }
                     plandiv.append(tbdiv)
                 }
+                na=$("<input type='button' value='<< Prev' /><input type='button' value='Curr' /><input type='button' value='Next >>' />").filter('input').each(function(){
+                    $(this).click(function(){
+                        //var offset=7
+                        var curr_1st=new Date()
+                        if($(this).val()=="<< Prev"){
+                            curr_1st=new Date($('#days div:eq(1)').text()).addDays(-7)                        
+                        }else if($(this).val()=="Next >>"){                    
+                            curr_1st=new Date($('#days div:eq(1)').text()).addDays(7)
+                        }
+                        function getMonday(d) {
+                            d = new Date(d);
+                            var day = d.getDay(),
+                                diff = d.getDate() - day + (day == 0 ? -6:1); // adjust when day is sunday
+                            return new Date(d.setDate(diff));
+                        }
+
+                        //getMonday(new Date()); // Mon Nov 08 2010
+                        first=getMonday(curr_1st)
+                        for(var i=0;i<parseInt(conf.days);i++){
+                            $('#days div:eq('+(i+1)+')').text(first.addDays(i).toDateString())
+                        }
+                        //console.log($(this).text())
+                    })
+                })
+
                 sel=$('<div style="text-align:right"><span>Week days</span></div>').append(
                     $('<select ></select>').append('<option>5</option><option>6</option><option>7</option>').on('change',function(){                        
                         //stylesheet=
@@ -320,9 +415,10 @@
                         //$('link').remove()
                         $('head').append('<link rel="stylesheet" type="text/css" href="css/week'+conf.days+'.css">')
                         init()
-                    }))
+                    })).append(na)
                 $('#planner').append('<div class="title"><h2>ESD test bench arrangement system</h2></div>')
                 $('#planner').append(sel)
+                //$('#planner').append(na)
                 $('#planner').append('<div id="mod"></div>')
                 $('#planner').append(str)
                 $('#planner').append(plandiv)
@@ -331,7 +427,7 @@
                 
                 $('select').find('option').each(function(i,e){
                     if(e.text==conf.days){
-                        console.log(e.text,conf.days)
+                        //console.log(e.text,conf.days)
                         e.selected=true;
                     }
                 })
