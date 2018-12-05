@@ -58,7 +58,18 @@
         #btngrp {text-align: center;}
         #btngrp ul{display:inline-block}
         #btngrp li{list-style: none;padding:0 10px;display:inline-block}
-        
+        .infomation{
+            
+            position:absolute;
+            left:30%;
+            top:300px;
+            width:400px;
+            margin:0 auto;
+            height:200px;
+            background:rgb(241,241,241);
+            z-index:10;
+            padding:10px;
+        }
         .slots:before{
             height:40px;
             content:"Slots";
@@ -283,6 +294,7 @@
         function createinput(trig){
             //if($('#mod').text()==""){
             $('#mod').html("")
+                var $this=$('#mod')
                 var labels=['Project_Name','Test_Type','BM_No','Priority','Tester']
                 el=$('<div><H2 style="text-align:center;">Infomation </H2></div>')
                 frame=$("<div></div>").addClass('frame')
@@ -325,9 +337,10 @@
                     })
                 btn.find('#save').click(function(){
                     for(var i in labels){
-                        trig.attr(labels[i],el.find('[name="'+labels[i]+'"]').val())
+                        trig.attr(labels[i],$this.find('[name="'+labels[i]+'"]').val())
+                        console.log($this.find('[name="'+labels[i]+'"]').val())
                     }
-                    trig.text(el.find('[name="Project_Name"]').val())
+                    trig.text($this.find('[name="Project_Name"]').val())
                     $('#mod').hide()
                     $('#overlay').hide()
                 })
@@ -424,7 +437,24 @@
                 $('#planner').append(plandiv)
                 
                 $('#planner').append($("<div class='slots'></div>").append($('<div></div><div></div><div></div><div></div><div></div>')))
-                
+                $('.slots div').dblclick(function(){
+                    if(!$(this).data('json')){
+                        return false;
+                    }
+                    
+                    js=JSON.parse($(this).data('json'))
+                    //create input
+                    $('<div></div>').html(function(){
+                        var str=""
+                        for(var i in js){
+                            str+=i+":"+js[i]+"<br>"
+                        }
+                        return str;
+                    })
+                    .appendTo($('body'))
+                    .addClass('infomation').click(function(){$(this).remove()})
+                    
+                })
                 $('select').find('option').each(function(i,e){
                     if(e.text==conf.days){
                         //console.log(e.text,conf.days)
