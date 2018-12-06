@@ -96,6 +96,35 @@
                 z-index:11;
                 margin:0 auto;
             }
+            /* basic style */
+                .close {
+                    /* still bad on picking color */
+                    background:#ccc;
+                    color: grey;
+                    /* make a round button */
+                    border-radius: 12px;
+                    /* center text */
+                    line-height: 20px;
+                    text-align: center;
+                    height: 20px;
+                    width: 20px;
+                    font-size: 18px;
+                    padding: 1px;
+                }
+                /* use cross as close button */
+                .close::before {
+                    content: "\2716";
+                }
+                /* place the button on top-right */
+                .close:hover{
+                    background:aliceblue;
+                }
+                .close {
+                    top: -10px;
+                    right: -10px;
+                    position: absolute;
+                }
+
             .frame{height:180px;}
             .label{width:200px;float:left;box-sizing: border-box;padding-left:30px;margin:5px 0px;
             height:20px;}
@@ -147,7 +176,19 @@
         }
         
     }
-    
+    function jsongen(tr){
+            //retrun json string of input
+            js={}
+            var labels=['Project_Name','Test_Type','BM_No','Priority','Tester']
+            for(var i=0;i<labels.length;i++){
+                label=labels[i]
+                js[label]=tr.attr(label)
+            }
+            return JSON.stringify(js)
+        }
+
+
+
     (function($){
     $.fn.disableSelection = function() {
         return this
@@ -162,16 +203,7 @@
 
 
 
-        function jsongen(tr){
-            //retrun json string of input
-            js={}
-            var labels=['Project_Name','Test_Type','BM_No','Priority','Tester']
-            for(var i=0;i<labels.length;i++){
-                label=labels[i]
-                js[label]=tr.attr(label)
-            }
-            return JSON.stringify(js)
-        }
+        
 
         $('.slots div')
         .on('drop',function(e){
@@ -344,7 +376,8 @@
                     $('#mod').hide()
                     $('#overlay').hide()
                 })
-                
+                $('#mod').append('<span class="close"></span>')
+                $('#mod').find('.close').click(function(){$('#mod').hide();$('#overlay').hide()})
                 $('#mod').append(el).append(frame)
                 $('#mod').append(btn)
                 $('#overlay').show()
@@ -464,10 +497,48 @@
                 evtbind()
             }
 
-
-
-        </script>
             
+            
+                var jsonobj=function(){
+                    this.firstday=$("#days div:eq(1)").text()
+                    this.count=conf.days 
+                    this.init()                   
+                }
+                jsonobj.prototype={
+                    
+                    init:function(){
+                        var tbs=[]
+                        var tbs_el=$('div #plans')
+                        tbs_el.each(function(i,el){
+                            var tb=[]
+                            $(this).find('div:not(.no)').each(function(j,ele){
+                                tb.push(jsongen($(this)))
+                                //console.log($(this).text())
+                            })
+                            tbs.push(tb)
+                        })
+                        this.tbs=tbs
+                    },
+                    show:function(){
+                        return this.tbs;
+                    },
+                    load:function(ajax){
+                        //rend web
+                    }
+                    
+                }
+               
+                
+            
+
+            $(function(){$('#dddd').click(function(){
+                console.log('alert')
+                var d=new jsonobj();
+                console.log(d)
+            })
+            })
+        </script>
+            <input id='dddd' type='button' value='OOOOOOOOOOOOOOOOOOOOK'>
             </body>
     
     
