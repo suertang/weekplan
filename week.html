@@ -134,12 +134,6 @@
     <script src="http://code.jquery.com/jquery-2.2.4.min.js"></script>
 
     <script>
-
-    function log(str){
-        console.log(str,eval(str))
-    }
-
-
     let m_pos;
     var isResize=false;
     function resize(e){
@@ -178,13 +172,25 @@
     }
     function jsongen(tr){
             //retrun json string of input
-            js={}
-            var labels=['Project_Name','Test_Type','BM_No','Priority','Tester']
+            js=tr.data('json') //|| {}
+            if(tr.hasClass('hide')){
+                return {'hide':true}
+            }
+            col = tr.attr('class') && tr.attr('class').match(/colspan\d/)
+            
+            if(col){
+                //console.log("col[0]",col[0])
+                col[0]>1 && (js.colspan=col[0])
+                //js.colspan=col[0]
+            }
+            //js=tr.data('json')
+            /*var labels=['Project_Name','Test_Type','BM_No','Priority','Tester']
             for(var i=0;i<labels.length;i++){
                 label=labels[i]
-                js[label]=tr.attr(label)
+                js[label]=jso[label]
             }
-            return JSON.stringify(js)
+            */
+            return js
         }
 
 
@@ -199,24 +205,20 @@
     })(jQuery); 
         var st={}
         var ed={}
-    var evtbind=function(){
-
-
-
-        
-
+    var evtbind=function(){      
+        //console.log('binding')
         $('.slots div')
-        .on('drop',function(e){
-            
+        .on('drop',function(e){            
             txt=e.originalEvent.dataTransfer.getData("json")
+            //txt=e.data('json')
             js=JSON.parse(txt)
-            //console.log('dropping',txt)
-            $(this).data('json',txt);
+            //console.log('dropping slot',txt.toString())
+            $(this).data('json',js);
             $(this).text(js["Project_Name"])
             return false;
         })
         .on('dragstart',function(e){            
-            e.originalEvent.dataTransfer.setData("json",$(this).data('json'))
+            e.originalEvent.dataTransfer.setData("json",JSON.stringify($(this).data('json')))
         })
         .on('dragover',false)
         .attr('draggable','true')
@@ -225,9 +227,7 @@
 
         $('.no')
         .disableSelection()
-        $('#plans div:not(.no)')
-        //.disableSelection()
-
+        $('#plans div:not(.no)')//.disableSelection()
         .mousedown(function(e){
             //console.log('X start',e.pageX)
             //console.log('I am div number:',$('#plans div').index(this))
@@ -278,7 +278,7 @@
 
             warp=end_index+1-start_index
             $(this).parent().find('div:eq('+start_index+')').attr('class',function(index,css){
-                console.log('css=',css)
+                //console.log('css=',css)
                 if(css){
                     css.replace(/colspan\d/,'');
                     
@@ -295,8 +295,10 @@
             .on('dragstart',function(e){
                 //e.originalEvent.preventDefault()
                 
-                text=jsongen($(this))
-                e.originalEvent.dataTransfer.setData("json",text)
+                //text=jsongen($(this))
+                text=$(this).data('json')
+                //console.log('on grag, the text is:',text)
+                e.originalEvent.dataTransfer.setData("json",JSON.stringify(text))
                 
                 //return false;
             })
@@ -304,9 +306,11 @@
                 
                 txt=e.originalEvent.dataTransfer.getData("json")
                 js=JSON.parse(txt)
-                for(var attr in js){
-                    $(this).attr(attr,js[attr])
-                }
+                //js=txt
+                //for(var attr in js){
+                //    $(this).attr(attr,js[attr])
+                //}
+                $(this).data('json',js)
                 $(this).text(js["Project_Name"]);
                 return false;
             })
@@ -327,13 +331,18 @@
             //if($('#mod').text()==""){
             $('#mod').html("")
                 var $this=$('#mod')
-                var labels=['Project_Name','Test_Type','BM_No','Priority','Tester']
+                var labels=['Project_Name','Test_Type','BM_No','Priority','engineer']
                 el=$('<div><H2 style="text-align:center;">Infomation </H2></div>')
                 frame=$("<div></div>").addClass('frame')
                 for(var i in labels){ 
                     if(labels[i]!=''){     
                         label=$('<div></div>').text(labels[i]).addClass('label')
-                        inp=$('<div><div>').append($('<input>').attr('name',labels[i]).val(trig.attr(labels[i]))).addClass('ins')
+                        //inp=$('<div><div>').append($('<input>').attr('name',labels[i]).val(trig.attr(labels[i]))).addClass('ins')
+                        inp=$('<div><div>').append($('<input>').attr('name',labels[i]).val(function(){
+                            if(!trig.data('json'))
+                                return ""
+                            return trig.data('json')[labels[i]]
+                        })).addClass('ins')
                         //console.log(trig.attr(labels[i]))
                         frame.append(label).append(inp)
                     }
@@ -368,10 +377,13 @@
                     $('#overlay').hide()
                     })
                 btn.find('#save').click(function(){
+                    js={}
                     for(var i in labels){
-                        trig.attr(labels[i],$this.find('[name="'+labels[i]+'"]').val())
-                        console.log($this.find('[name="'+labels[i]+'"]').val())
+                        //trig.attr(labels[i],$this.find('[name="'+labels[i]+'"]').val())
+                        //console.log($this.find('[name="'+labels[i]+'"]').val())
+                        js[labels[i]]=$this.find('[name="'+labels[i]+'"]').val()
                     }
+                    trig.data('json',js)
                     trig.text($this.find('[name="Project_Name"]').val())
                     $('#mod').hide()
                     $('#overlay').hide()
@@ -409,7 +421,7 @@
                 }
             $('head').append('<link rel="stylesheet" type="text/css" href="css/week'+conf.days+'.css">')
             $(init());
-            function init(){
+            function init(load=false){
                 $('#planner').html('')
                 str=$("<div id='days'></div>")
                 weeks=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday']
@@ -475,7 +487,7 @@
                         return false;
                     }
                     
-                    js=JSON.parse($(this).data('json'))
+                    js=$(this).data('json')
                     //create input
                     $('<div></div>').html(function(){
                         var str=""
@@ -501,8 +513,9 @@
             
                 var jsonobj=function(){
                     this.firstday=$("#days div:eq(1)").text()
-                    this.count=conf.days 
-                    this.init()                   
+                    this.count=conf.days
+                    self=this
+                    this.init()
                 }
                 jsonobj.prototype={
                     
@@ -520,10 +533,239 @@
                         this.tbs=tbs
                     },
                     show:function(){
-                        return this.tbs;
+                        console.log( JSON.stringify(this))
                     },
-                    load:function(ajax){
+                    //load:function(ajax){
+                    load:function(){
                         //rend web
+                        var json={
+                            "firstday": "Mon Dec 03 2018",
+                            "count": "5",
+                            "tbs": [
+                                [
+                                    {
+                                        "Project_Name": "asd",
+                                        "Test_Type": "",
+                                        "BM_No": "",
+                                        "Priority": "",
+                                        "Tester": "",
+                                        "colspan": "colspan3"
+                                    },
+                                    {
+                                        "hide": true
+                                    },
+                                    {
+                                        "hide": true
+                                    },
+                                    null,
+                                    null
+                                ],
+                                [
+                                    null,
+                                    null,
+                                    null,
+                                    null,
+                                    null
+                                ],
+                                [
+                                    {
+                                        "Project_Name": "asd",
+                                        "Test_Type": "",
+                                        "BM_No": "",
+                                        "Priority": "",
+                                        "Tester": "",
+                                        "colspan": "colspan5"
+                                    },
+                                    {
+                                        "hide": true
+                                    },
+                                    {
+                                        "hide": true
+                                    },
+                                    {
+                                        "hide": true
+                                    },
+                                    {
+                                        "hide": true
+                                    }
+                                ],
+                                [
+                                    null,
+                                    null,
+                                    null,
+                                    null,
+                                    null
+                                ],
+                                [
+                                    null,
+                                    null,
+                                    null,
+                                    null,
+                                    null
+                                ],
+                                [
+                                    null,
+                                    null,
+                                    null,
+                                    null,
+                                    null
+                                ],
+                                [
+                                    null,
+                                    null,
+                                    null,
+                                    null,
+                                    null
+                                ],
+                                [
+                                    null,
+                                    null,
+                                    null,
+                                    null,
+                                    null
+                                ]
+                            ]
+                        }
+                        
+                        tbs=json.tbs;
+                        for(var i=0;i<tbs.length;i++){
+                            //loop for each tb
+                            var data=tbs[i]
+                            //console.log(data.length)
+                            var tbdiv=$('#weeks div:eq('+(i)+')')
+                            for (var j=0;j<data.length;j++){
+                                var jsday=data[j]                                
+                                var divday=tbdiv.find('div:not(.no):eq('+j+')')                                
+                                if(jsday){
+                                    //not null
+                                    if(jsday.hide){
+                                        //set class hide
+                                        console.log('try to replace')
+                                        divday.replaceWith('<div class="hide"></div>')
+                                    }else{
+                                        //set class planed colspan, data and text
+                                        divday.replaceWith($('<div></div>').text(jsday.Project_Name).addClass(jsday.colspan+' planned').data('json',jsday))
+                                    }
+                                }else{
+                                    //null
+                                    //just insert blank div
+                                    divday.replaceWith('<div></div>')
+                                }
+                            }
+                        }
+                    evtbind();
+                    this.bindplan();
+                    },
+                    bindplan:function(){
+                            $('.planned').bind('dblclick',function(){
+                            //$(this).toggleClass('sel')
+                            el=$(this) //last mouseup element
+                            self.createinput($(this)).show() 
+                        })
+                        .attr('draggable','true')
+                        .on('dragstart',function(e){
+                            //e.originalEvent.preventDefault()
+                            
+                            //text=jsongen($(this))
+                            text=$(this).data('json')
+                            //console.log('on grag, the text is:',text)
+                            e.originalEvent.dataTransfer.setData("json",JSON.stringify(text))
+                            
+                            //return false;
+                        })
+                        .on('drop',function(e){
+                            
+                            txt=e.originalEvent.dataTransfer.getData("json")
+                            js=JSON.parse(txt)
+                            $(this).data('json',js)
+                            $(this).text(js["Project_Name"]);
+                            return false;
+                        })
+                        .on('dragover',function(e){
+                            e.stopPropagation()
+                            e.preventDefault()
+                        })
+                    },
+                    createinput:function(trig){
+                        //if($('#mod').text()==""){
+                        $('#mod').html("")
+                            var $this=$('#mod')
+                            var labels=['Project_Name','Test_Type','BM_No','Priority','engineer']
+                            el=$('<div><H2 style="text-align:center;">Infomation </H2></div>')
+                            frame=$("<div></div>").addClass('frame')
+                            for(var i in labels){ 
+                                if(labels[i]!=''){     
+                                    label=$('<div></div>').text(labels[i]).addClass('label')
+                                    //inp=$('<div><div>').append($('<input>').attr('name',labels[i]).val(trig.attr(labels[i]))).addClass('ins')
+                                    inp=$('<div><div>').append($('<input>').attr('name',labels[i]).val(function(){
+                                        if(!trig.data('json'))
+                                            return ""
+                                        return trig.data('json')[labels[i]]
+                                    })).addClass('ins')
+                                    //console.log(trig.attr(labels[i]))
+                                    frame.append(label).append(inp)
+                                }
+                            }
+                            //console.log(frame)
+                            
+                            btn=$('<div id="btngrp"><ul><li><button id="save">Save</button></li><li><button  id="cancel">Cancel</button></li><li><button id="del">Delete</button></li></ul></div>')
+                            btn.find('#cancel').click(function(){$('#mod').hide();$('#overlay').hide()})
+                            btn.find('#del').click(function(){
+                                //recover
+                                trig.attr('class',function(i,c){
+                                    if(c.match(/colspan(\d)/)){
+                                        colspan=parseInt(c.match(/colspan(\d)/)[1])
+                                    }
+                                    else{
+                                        colspan=1
+                                    }
+                                    n=trig
+                                    for(var i=0;i<colspan-1;i++){
+                                        n=n.next()
+                                        n.removeClass('hide')
+                                    }
+                                    return c.replace(/colspan\d/,'').replace('planned','')
+                                    })
+                                .attr('draggable',false)
+                                .text('')
+                                .off('dblclick')
+                                labels.forEach(function(v,i){
+                                    trig.removeAttr(v)
+                                })
+                                $('#mod').hide()
+                                $('#overlay').hide()
+                                })
+                            btn.find('#save').click(function(){
+                                js={}
+                                for(var i in labels){
+                                    //trig.attr(labels[i],$this.find('[name="'+labels[i]+'"]').val())
+                                    //console.log($this.find('[name="'+labels[i]+'"]').val())
+                                    js[labels[i]]=$this.find('[name="'+labels[i]+'"]').val()
+                                }
+                                trig.data('json',js)
+                                trig.text($this.find('[name="Project_Name"]').val())
+                                $('#mod').hide()
+                                $('#overlay').hide()
+                            })
+                            $('#mod').append('<span class="close"></span>')
+                            $('#mod').find('.close').click(function(){$('#mod').hide();$('#overlay').hide()})
+                            $('#mod').append(el).append(frame)
+                            $('#mod').append(btn)
+                            $('#overlay').show()
+                        //}
+
+                        return $('#mod')
+                    },
+                    submit:function(){
+                        $.ajax({ 
+                            type: "POST",  
+                            url : "/sql", 
+                            dataType:'json',
+                            data:  {'data':JSON.stringify(self)},  
+                            success: function(json){
+                                alert(json.status);
+                            }
+                        });
                     }
                     
                 }
@@ -532,13 +774,19 @@
             
 
             $(function(){$('#dddd').click(function(){
-                console.log('alert')
+                //console.log('alert')
                 var d=new jsonobj();
-                console.log(d)
+                d.submit()
+            })
+            $('#load').click(function(){
+                //console.log('alert')
+                var d=new jsonobj();
+                d.load()
             })
             })
         </script>
-            <input id='dddd' type='button' value='OOOOOOOOOOOOOOOOOOOOK'>
+            <input id='dddd' type='button' value='submit'>
+            <input id='load' type='button' value='load'>
             </body>
     
     
