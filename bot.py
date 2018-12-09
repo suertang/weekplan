@@ -1,7 +1,7 @@
 #/usr/bin/env python
 #coding=utf-8
 from bottle import route, run,static_file
-from bottle import request,view
+from bottle import request,view,response
 import os
 import sqlite3
 import json
@@ -14,17 +14,32 @@ def savejson():
     js=json.loads(js)
     id=js['firstday']
     count=js['count']
-    jso=js['tbs']
-    c.execute("""INSERT INTO TBarrange (Week_ID,count,json)
-      VALUES (?,?,?)""",(id,count,jso));
+    jso=json.dumps(js['tbs'])
+    c.execute("""REPLACE INTO TBarrange (Week_ID,count,json)
+      VALUES (?,?,?)""",(id,count,jso))
+    conn.commit()
+    conn.close()
     return {"status":"OK"}
 
 @route('/ajax', method = 'GET')
-def savejson():
-    js=request.POST.get('data')
-    with open('data.json', 'w') as f:
-        f.write('{"data":'+js+'}')
-    return {"status":"OK"}
+def ajax():
+    week=request.GET.get('week')
+    conn = sqlite3.connect('ddd.db')
+    c = conn.cursor()
+    r=c.execute('SELECT * FROM TBarrange WHERE Week_ID=?',(week,))    
+    if(r):
+        rec=r.fetchone()
+        ret={}
+        ret['firstday']=rec[0]
+        ret['count']=rec[1]
+        ret['tbs']=json.loads(rec[2])
+    else:
+        ret = {'status':'notFound'}
+    conn.close()
+    response.content_type = 'application/json'
+    return json.dumps(ret)
+    
+    
 
 @route('/<name:re:images|css|js|icons>/<path:path>')
 def static_img(name,path):

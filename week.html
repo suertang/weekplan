@@ -172,16 +172,18 @@
     }
     function jsongen(tr){
             //retrun json string of input
-            js=tr.data('json') //|| {}
+            js=tr.data('json') || {}
             if(tr.hasClass('hide')){
                 return {'hide':true}
             }
-            col = tr.attr('class') && tr.attr('class').match(/colspan\d/)
+            var id,col = tr.attr('class') && tr.attr('class').match(/colspan\d/)
             
             if(col){
                 //console.log("col[0]",col[0])
-                col[0]>1 && (js.colspan=col[0])
+                
+                    js.colspan=col[0]
                 //js.colspan=col[0]
+                
             }
             //js=tr.data('json')
             /*var labels=['Project_Name','Test_Type','BM_No','Priority','Tester']
@@ -536,122 +538,41 @@
                         console.log( JSON.stringify(this))
                     },
                     //load:function(ajax){
-                    load:function(){
+                    load:function(json){
                         //rend web
-                        var json={
-                            "firstday": "Mon Dec 03 2018",
-                            "count": "5",
-                            "tbs": [
-                                [
-                                    {
-                                        "Project_Name": "asd",
-                                        "Test_Type": "",
-                                        "BM_No": "",
-                                        "Priority": "",
-                                        "Tester": "",
-                                        "colspan": "colspan3"
-                                    },
-                                    {
-                                        "hide": true
-                                    },
-                                    {
-                                        "hide": true
-                                    },
-                                    null,
-                                    null
-                                ],
-                                [
-                                    null,
-                                    null,
-                                    null,
-                                    null,
-                                    null
-                                ],
-                                [
-                                    {
-                                        "Project_Name": "asd",
-                                        "Test_Type": "",
-                                        "BM_No": "",
-                                        "Priority": "",
-                                        "Tester": "",
-                                        "colspan": "colspan5"
-                                    },
-                                    {
-                                        "hide": true
-                                    },
-                                    {
-                                        "hide": true
-                                    },
-                                    {
-                                        "hide": true
-                                    },
-                                    {
-                                        "hide": true
-                                    }
-                                ],
-                                [
-                                    null,
-                                    null,
-                                    null,
-                                    null,
-                                    null
-                                ],
-                                [
-                                    null,
-                                    null,
-                                    null,
-                                    null,
-                                    null
-                                ],
-                                [
-                                    null,
-                                    null,
-                                    null,
-                                    null,
-                                    null
-                                ],
-                                [
-                                    null,
-                                    null,
-                                    null,
-                                    null,
-                                    null
-                                ],
-                                [
-                                    null,
-                                    null,
-                                    null,
-                                    null,
-                                    null
-                                ]
-                            ]
-                        }
                         
-                        tbs=json.tbs;
-                        for(var i=0;i<tbs.length;i++){
+                        var tbs1=json.tbs;
+                        for(var i=0;i<tbs1.length;i++){
                             //loop for each tb
-                            var data=tbs[i]
-                            //console.log(data.length)
-                            var tbdiv=$('#weeks div:eq('+(i)+')')
-                            for (var j=0;j<data.length;j++){
-                                var jsday=data[j]                                
-                                var divday=tbdiv.find('div:not(.no):eq('+j+')')                                
-                                if(jsday){
+                            var data=tbs1[i]
+                            
+                            var tbdiv=$('#weeks #plans').eq(i)
+                            tbdiv.css('background:#999')
+                            for (var j=0;j<json.count;j++){
+                                var jsday=data[j] 
+                                                            
+                                var divday=tbdiv.find('div').eq(j+1)                            
+                                if(jsday!=null){
                                     //not null
                                     if(jsday.hide){
                                         //set class hide
-                                        console.log('try to replace')
-                                        divday.replaceWith('<div class="hide"></div>')
+                                        //console.log('try to replace',divday)
+                                        divday.attr('class','hide')
+                                        
+                                        //replaceWith($('<div class="hide"></div>'))
                                     }else{
                                         //set class planed colspan, data and text
-                                        divday.replaceWith($('<div></div>').text(jsday.Project_Name).addClass(jsday.colspan+' planned').data('json',jsday))
+                                        divday.attr('class',jsday.colspan+' planned').data('json',jsday).text(jsday.Project_Name)
+
+                                        //divday.replaceWith($('<div></div>').text(jsday.Project_Name).addClass(jsday.colspan+' planned').data('json',jsday))
                                     }
                                 }else{
                                     //null
                                     //just insert blank div
-                                    divday.replaceWith('<div></div>')
+                                    divday.replaceWith($('<div></div>'))
                                 }
                             }
+                            tbdiv.css('background:#FFF')
                         }
                     evtbind();
                     this.bindplan();
@@ -763,7 +684,20 @@
                             dataType:'json',
                             data:  {'data':JSON.stringify(self)},  
                             success: function(json){
-                                alert(json.status);
+                                console.log(json.status);
+                                console.log(JSON.parse(JSON.stringify(self)))
+                            }
+                        });
+                    },
+                    rend:function(){
+                        $.ajax({ 
+                            type: "GET",  
+                            url : "/ajax", 
+                            dataType:'json',
+                            data:  {'week':'Mon Dec 03 2018'},  
+                            success: function(json){
+                                console.log(json);
+                                self.load(json);
                             }
                         });
                     }
@@ -781,12 +715,12 @@
             $('#load').click(function(){
                 //console.log('alert')
                 var d=new jsonobj();
-                d.load()
+                d.rend()
             })
             })
         </script>
             <input id='dddd' type='button' value='submit'>
-            <input id='load' type='button' value='load'>
+            <input id='load' type='button' value='test'>
             </body>
     
     
