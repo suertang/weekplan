@@ -14,6 +14,20 @@
         #days div{line-height:30px;text-align:center}
         .no{text-align:center;line-height:40px;
         }
+        #loadingDiv{
+            position: absolute;
+                display:none;
+                width:600px;
+                left:30%;
+                top:20%;
+                height:400px;
+                background-color:rgb(224,224,224);
+                font-family: Arial, Helvetica, sans-serif;
+                border:1px solid grey;
+                border-radius: 3px;
+                z-index:11;
+                margin:0 auto;
+        }
         #overlay{
             width:100%;
             height:100%;
@@ -44,7 +58,7 @@
             cursor: w-resize;
             z-index: 12;
         }
-        .slots{margin:0 auto;}
+        .slots{margin:0 auto;width:1000px}
         .slots div{
             width:18%;
             box-sizing: border-box;
@@ -96,6 +110,10 @@
                 z-index:11;
                 margin:0 auto;
             }
+            .control{width:1000px;
+            margin:0 auto;
+            text-align:center;}
+            .control input{display:inline-block;}
             /* basic style */
                 .close {
                     /* still bad on picking color */
@@ -179,11 +197,7 @@
             var id,col = tr.attr('class') && tr.attr('class').match(/colspan\d/)
             
             if(col){
-                //console.log("col[0]",col[0])
-                
                     js.colspan=col[0]
-                //js.colspan=col[0]
-                
             }
             //js=tr.data('json')
             /*var labels=['Project_Name','Test_Type','BM_No','Priority','Tester']
@@ -209,22 +223,7 @@
         var ed={}
     var evtbind=function(){      
         //console.log('binding')
-        $('.slots div')
-        .on('drop',function(e){            
-            txt=e.originalEvent.dataTransfer.getData("json")
-            //txt=e.data('json')
-            js=JSON.parse(txt)
-            //console.log('dropping slot',txt.toString())
-            $(this).data('json',js);
-            $(this).text(js["Project_Name"])
-            return false;
-        })
-        .on('dragstart',function(e){            
-            e.originalEvent.dataTransfer.setData("json",JSON.stringify($(this).data('json')))
-        })
-        .on('dragover',false)
-        .attr('draggable','true')
-        .dblclick()
+        
 
 
         $('.no')
@@ -279,7 +278,7 @@
             end_index=Math.max(st.i,ed.i)
 
             warp=end_index+1-start_index
-            $(this).parent().find('div:eq('+start_index+')').attr('class',function(index,css){
+            $(this).parent().find('div').eq(start_index).attr('class',function(index,css){
                 //console.log('css=',css)
                 if(css){
                     css.replace(/colspan\d/,'');
@@ -313,7 +312,8 @@
                 //    $(this).attr(attr,js[attr])
                 //}
                 $(this).data('json',js)
-                $(this).text(js["Project_Name"]);
+                //$(this).text(js["Project_Name"]);
+                $(this).text([js.Priority,js.Test_Type,js.Project_Name].join('/'))
                 return false;
             })
             .on('dragover',function(e){
@@ -386,7 +386,7 @@
                         js[labels[i]]=$this.find('[name="'+labels[i]+'"]').val()
                     }
                     trig.data('json',js)
-                    trig.text($this.find('[name="Project_Name"]').val())
+                    trig.text([js.Priority,js.Test_Type,js.Project_Name].join('/'))
                     $('#mod').hide()
                     $('#overlay').hide()
                 })
@@ -417,13 +417,20 @@
                 curr=new Date()
                 return new Date(curr.setDate(day+1)).toDateString();
             }
+
+            function getMonday(d) {
+                d = new Date(d);
+                var day = d.getDay(),
+                    diff = d.getDate() - day + (day == 0 ? -6:1); // adjust when day is sunday
+                return new Date(d.setDate(diff));
+            }
             var conf={
                 'days':'5',
                 'TBs':'8'
                 }
-            $('head').append('<link rel="stylesheet" type="text/css" href="css/week'+conf.days+'.css">')
-            $(init());
-            function init(load=false){
+            
+            //$(init());
+            function init(weekid=null){
                 $('#planner').html('')
                 str=$("<div id='days'></div>")
                 weeks=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday']
@@ -432,8 +439,16 @@
                 var curr = new Date; // get current date
                 var first = curr.getDate() - curr.getDay(); // First day is the day of the month - the day of the week
                 //var last = first + 6; // last day is the first day + 6
+
+                //var curr_1st=new Date()
+                if(weekid){
+                    var curr_1st=new Date(weekid)
+                }else{
+                    var curr_1st=new Date()
+                }
+
                 for (var i=0;i<parseInt(conf.days);i++){
-                    str.append($("<div></div>").text(daytostring(first+i)))
+                    str.append($("<div></div>").text(curr_1st.addDays(i).toDateString()))
                 }
                 plandiv=$("<div id='weeks'></div>")
                 for (var i=0;i<parseInt(conf.TBs);i++){
@@ -444,26 +459,26 @@
                     plandiv.append(tbdiv)
                 }
                 na=$("<input type='button' value='<< Prev' /><input type='button' value='Curr' /><input type='button' value='Next >>' />").filter('input').each(function(){
-                    $(this).click(function(){
+                    $(this).click(function(e){
                         //var offset=7
+                        //$(this).off('click')
                         var curr_1st=new Date()
                         if($(this).val()=="<< Prev"){
                             curr_1st=new Date($('#days div:eq(1)').text()).addDays(-7)                        
                         }else if($(this).val()=="Next >>"){                    
                             curr_1st=new Date($('#days div:eq(1)').text()).addDays(7)
                         }
-                        function getMonday(d) {
-                            d = new Date(d);
-                            var day = d.getDay(),
-                                diff = d.getDate() - day + (day == 0 ? -6:1); // adjust when day is sunday
-                            return new Date(d.setDate(diff));
-                        }
-
+                        
                         //getMonday(new Date()); // Mon Nov 08 2010
                         first=getMonday(curr_1st)
                         for(var i=0;i<parseInt(conf.days);i++){
                             $('#days div:eq('+(i+1)+')').text(first.addDays(i).toDateString())
                         }
+                        var d=new jsonobj();
+                        d.init(curr_1st.toDateString())
+                        console.log(curr_1st.toDateString())
+                        //e.originalEvent.stopPropagation()
+                        //d.init(curr_1st.toDateString())
                         //console.log($(this).text())
                     })
                 })
@@ -483,25 +498,7 @@
                 $('#planner').append(str)
                 $('#planner').append(plandiv)
                 
-                $('#planner').append($("<div class='slots'></div>").append($('<div></div><div></div><div></div><div></div><div></div>')))
-                $('.slots div').dblclick(function(){
-                    if(!$(this).data('json')){
-                        return false;
-                    }
-                    
-                    js=$(this).data('json')
-                    //create input
-                    $('<div></div>').html(function(){
-                        var str=""
-                        for(var i in js){
-                            str+=i+":"+js[i]+"<br>"
-                        }
-                        return str;
-                    })
-                    .appendTo($('body'))
-                    .addClass('infomation').click(function(){$(this).remove()})
-                    
-                })
+                
                 $('select').find('option').each(function(i,e){
                     if(e.text==conf.days){
                         //console.log(e.text,conf.days)
@@ -514,14 +511,47 @@
             
             
                 var jsonobj=function(){
-                    this.firstday=$("#days div:eq(1)").text()
-                    this.count=conf.days
+                    
                     self=this
-                    this.init()
+                    //this.init()
                 }
                 jsonobj.prototype={
-                    
-                    init:function(){
+                    init:function(weekid=null){
+                        if(weekid){
+                            day=getMonday(new Date(weekid))//
+                        }else{
+                            day=getMonday(new Date())//
+                        }
+                        self.search(day.toDateString())
+                    },
+                    search:function(weekid){
+                        $.ajax({ 
+                            type: "GET",  
+                            url : "/ajax", 
+                            dataType:'json',
+                            data:  {'week':weekid},  
+                            success: function(json){
+                                if(json.status=='notFound'){
+                                    console.log('notFound',day.toDateString())
+                                    conf.days=5
+                                    conf.TBs=8
+                                    $('head').append('<link rel="stylesheet" type="text/css" href="css/week'+conf.days+'.css">')
+                                    init(weekid)
+                                }
+                                else{
+                                    conf.days=json.count
+                                    conf.TBs=json.tbs.length
+                                    $('head').append('<link rel="stylesheet" type="text/css" href="css/week'+conf.days+'.css">')
+                                    init(weekid)
+                                    console.log(json)
+                                    self.load(json);
+                                }
+                            }
+                        });
+                    },
+                    prepare:function(){
+                        this.firstday=$("#days div").eq(1).text()
+                        this.count=conf.days
                         var tbs=[]
                         var tbs_el=$('div #plans')
                         tbs_el.each(function(i,el){
@@ -547,26 +577,31 @@
                             var data=tbs1[i]
                             
                             var tbdiv=$('#weeks #plans').eq(i)
-                            tbdiv.css('background:#999')
+                            //tbdiv.css('background:#999')
                             for (var j=0;j<json.count;j++){
                                 var jsday=data[j] 
                                                             
                                 var divday=tbdiv.find('div').eq(j+1)                            
-                                if(jsday!=null){
+                                if(jsday.hasOwnProperty("colspan") || jsday.hasOwnProperty("Project_Name")){
                                     //not null
-                                    if(jsday.hide){
-                                        //set class hide
-                                        //console.log('try to replace',divday)
-                                        divday.attr('class','hide')
-                                        
-                                        //replaceWith($('<div class="hide"></div>'))
-                                    }else{
+                                    
                                         //set class planed colspan, data and text
-                                        divday.attr('class',jsday.colspan+' planned').data('json',jsday).text(jsday.Project_Name)
-
+                                        divday.attr('class',jsday.colspan+' planned').data('json',jsday).text(
+                                            [jsday.Priority,jsday.Test_Type,jsday.Project_Name].join('/')
+                                            )
+                                        /* BM_No: ""
+                                        Priority: ""
+                                        Project_Name: "h"
+                                        Test_Type: ""
+                                        colspan: "colspan2"
+                                        engineer: "" */
                                         //divday.replaceWith($('<div></div>').text(jsday.Project_Name).addClass(jsday.colspan+' planned').data('json',jsday))
-                                    }
-                                }else{
+                                   
+                                }else if(jsday.hasOwnProperty("hide")){
+                                    divday.attr('class','hide')
+                                }
+                                
+                                else{
                                     //null
                                     //just insert blank div
                                     divday.replaceWith($('<div></div>'))
@@ -595,11 +630,11 @@
                             //return false;
                         })
                         .on('drop',function(e){
-                            
                             txt=e.originalEvent.dataTransfer.getData("json")
                             js=JSON.parse(txt)
                             $(this).data('json',js)
-                            $(this).text(js["Project_Name"]);
+                            //$(this).text(js["Project_Name"]);
+                            $(this).text([js.Priority,js.Test_Type,js.Project_Name].join('/'))
                             return false;
                         })
                         .on('dragover',function(e){
@@ -649,6 +684,7 @@
                                     })
                                 .attr('draggable',false)
                                 .text('')
+                                .removeData('json')
                                 .off('dblclick')
                                 labels.forEach(function(v,i){
                                     trig.removeAttr(v)
@@ -664,7 +700,7 @@
                                     js[labels[i]]=$this.find('[name="'+labels[i]+'"]').val()
                                 }
                                 trig.data('json',js)
-                                trig.text($this.find('[name="Project_Name"]').val())
+                                trig.text([js.Priority,js.Test_Type,js.Project_Name].join('/'))
                                 $('#mod').hide()
                                 $('#overlay').hide()
                             })
@@ -678,14 +714,16 @@
                         return $('#mod')
                     },
                     submit:function(){
+                        self.prepare();
                         $.ajax({ 
                             type: "POST",  
                             url : "/sql", 
                             dataType:'json',
                             data:  {'data':JSON.stringify(self)},  
                             success: function(json){
-                                console.log(json.status);
-                                console.log(JSON.parse(JSON.stringify(self)))
+                                //console.log(json.status);
+                                //console.log(JSON.parse(JSON.stringify(self)))
+                                window.alert(json.status)
                             }
                         });
                     },
@@ -694,9 +732,9 @@
                             type: "GET",  
                             url : "/ajax", 
                             dataType:'json',
-                            data:  {'week':'Mon Dec 03 2018'},  
+                            data:  {'week':$('#days div').eq(1).text()},  
                             success: function(json){
-                                console.log(json);
+                                //console.log(json);
                                 self.load(json);
                             }
                         });
@@ -708,19 +746,66 @@
             
 
             $(function(){$('#dddd').click(function(){
-                //console.log('alert')
-                var d=new jsonobj();
-                d.submit()
-            })
-            $('#load').click(function(){
-                //console.log('alert')
-                var d=new jsonobj();
+
                 d.rend()
             })
+
+            var d=new jsonobj();
+            d.init()
+            $('#load').click(function(){
+                d.submit()
             })
+            })
+
+            $(function(){
+                $('body').append($("<div class='slots'></div>").append($('<div></div><div></div><div></div><div></div><div></div>')))
+                $('.slots div').dblclick(function(){
+                    if(!$(this).data('json')){
+                        return false;
+                    }
+                    
+                    js=$(this).data('json')
+                    //create input
+                    $('<div></div>').html(function(){
+                        var str=""
+                        for(var i in js){
+                            str+=i+":"+js[i]+"<br>"
+                        }
+                        return str;
+                    })
+                    .appendTo($('body'))
+                    .addClass('infomation').click(function(){$(this).remove()})
+                    
+            })
+            $('.slots div')
+            .on('drop',function(e){            
+                txt=e.originalEvent.dataTransfer.getData("json")
+                //txt=e.data('json')
+                js=JSON.parse(txt)
+                //console.log('dropping slot',txt.toString())
+                $(this).data('json',js);
+                //$(this).text(js["Project_Name"])
+                $(this).text([js.Priority,js.Test_Type,js.Project_Name].join('/'))
+                return false;
+            })
+            .on('dragstart',function(e){            
+                e.originalEvent.dataTransfer.setData("json",JSON.stringify($(this).data('json')))
+            })
+            .on('dragover',false)
+            .attr('draggable','true')
+            /////////////////////////////
+            $( document ).ajaxStart(function() {
+                $( '#loadingDiv' ).show();
+            }).ajaxStop ( function(){
+                $( '#loadingDiv' ).delay(4000).hide(); // hide loading div
+                });
+                
+        })
         </script>
-            <input id='dddd' type='button' value='submit'>
-            <input id='load' type='button' value='test'>
+        <div class='control'><input id='load' type='button' value='Save'></div>
+        <div id='loadingDiv'>
+            Please wait... 
+        </div> 
             </body>
     
     
